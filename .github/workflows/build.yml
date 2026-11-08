@@ -26,28 +26,25 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Generate Gradle Structure and Build
+    - name: Fix Project Structure and Build
       run: |
-        if [ ! -d "app" ]; then
-          SUB_DIR=$(find . -maxdepth 2 -type d -name "app" | head -n 1)
-          if [ ! -z "$SUB_DIR" ]; then
-            cd "$(dirname "$SUB_DIR")"
-          fi
+        # البحث عن المجلد الذي يحتوي على مجلد app أو ملف build.gradle الخاص بـ app
+        APP_DIR=$(find . -type d -name "app" | head -n 1)
+        if [ ! -z "$APP_DIR" ]; then
+          PROJECT_ROOT=$(dirname "$APP_DIR")
+          cd "$PROJECT_ROOT"
         fi
 
-        if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
-          echo "Creating missing settings.gradle..."
-          echo "include ':app'" > settings.gradle
-        fi
+        # التأكد من صحة إعدادات settings.gradle لربط وحدة app
+        echo "include ':app'" > settings.gradle
 
-        if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
-          echo "Creating root build.gradle..."
-          printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
-        fi
+        # كتابة build.gradle صحيح للجذر يدعم مشاريع أندرويد
+        printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
+        # توليد الـ Wrapper وتشغيل البناء للـ app مباشرة
         gradle wrapper --gradle-version 8.0
         chmod +x gradlew
-        ./gradlew assembleDebug
+        ./gradlew :app:assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

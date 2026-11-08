@@ -18,7 +18,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y unzip wget
         
-        # تحميل وتثبيت Gradle 7.5 مباشرة على السيرفر لتجنب أي إصدار قديم
         wget https://services.gradle.org/distributions/gradle-7.5-bin.zip
         sudo mkdir -p /opt/gradle
         sudo unzip -d /opt/gradle gradle-7.5-bin.zip
@@ -33,7 +32,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build with System Gradle 7.5
+    - name: Build with Compatible Dependencies
       run: |
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
@@ -44,16 +43,14 @@ jobs:
           fi
         fi
 
-        if [ ! -f "app/build.gradle" ] && [ ! -f "app/build.gradle.kts" ]; then
-          mkdir -p app
-          printf "plugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    compileSdk 33\n    defaultConfig {\n        applicationId \"com.whatsapp.auth\"\n        minSdk 21\n        targetSdk 33\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.9.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.8.0'\n}\n" > app/build.gradle
-        fi
+        # كتابة ملف build.gradle مضبوط بإصدارات متوافقة مع viewpager2 و androidx
+        mkdir -p app
+        printf "plugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    compileSdk 34\n    defaultConfig {\n        applicationId \"com.whatsapp.auth\"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.12.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.11.0'\n    implementation 'androidx.viewpager2:viewpager2:1.0.0'\n}\n" > app/build.gradle
 
         echo "include ':app'" > settings.gradle
 
-        printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
+        printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:8.1.1\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
-        # استخدام أمر gradle العام للإصدار 7.5 مباشرة دون الحاجة لملفات الـ wrapper
         gradle :app:assembleDebug
 
     - name: Upload APK Artifact

@@ -26,7 +26,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Clean Wrapper and Build with Gradle 7.5
+    - name: Force Gradle 7.5 Wrapper and Build
       run: |
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
@@ -46,11 +46,12 @@ jobs:
 
         printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
-        # حذف ملفات الـ Wrapper القديمة تماماً لضمان عدم بقاء النسخة 4.4.1
-        rm -rf gradle gradlew gradlew.bat
+        # إنشاء مجلد wrapper وإجبار ملف الخصائص على استخدام رابط 7.5 المباشر
+        mkdir -p gradle/wrapper
+        printf "distributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\ndistributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\n" > gradle/wrapper/gradle-wrapper.properties
 
-        # توليد wrapper جديد بنسخة 7.5 نظيفة
-        gradle wrapper --gradle-version 7.5
+        # توليد الـ gradlew وبناء المشروع
+        gradle wrapper --gradle-version 7.5 --distribution-url=https://services.gradle.org/distributions/gradle-7.5-bin.zip
         chmod +x gradlew
         ./gradlew :app:assembleDebug
 

@@ -1,4 +1,4 @@
-name: Build APK with Auto Path Detection
+name: Auto Build Complete APK
 
 on:
   push:
@@ -26,26 +26,46 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Locate Project Root and Build
+    - name: Generate Gradle Structure and Build
       run: |
-        # البحث عن ملف settings.gradle لتحديد مجلد جذر المشروع بدقة
-        SETTINGS_FILE=$(find . -name "settings.gradle" -not -path "*/.*" | head -n 1)
-        if [ -z "$SETTINGS_FILE" ]; then
-          # إذا لم يوجد settings.gradle، نبحث عن settings.gradle.kts
-          SETTINGS_FILE=$(find . -name "settings.gradle.kts" -not -path "*/.*" | head -n 1)
+        # البحث عن مجلد app أو إنشاؤه إن لم يكن موجوداً
+        if [ ! -d "app" ]; then
+          # إذا كانت الملفات مفكوكة داخل مجلد فرعي، ننتقل إليه
+          SUB_DIR=$(find . -maxdepth 2 -type d -name "app" | head -n 1)
+          if [ ! -z "$SUB_DIR" ]; then
+            cd "$(dirname "$SUB_DIR")"
+          fi
         fi
-        
-        if [ -z "$SETTINGS_FILE" ]; then
-          echo "Error: settings.gradle not found anywhere in extracted files!"
-          exit 1
+
+        # التأكد من وجود settings.gradle، وإذا لم يكن موجوداً نقوم بإنشائه تلقائياً
+        if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
+          echo "Creating missing settings.gradle..."
+          echo "include ':app'" > settings.gradle
         fi
-        
-        PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-        echo "Found project root at: $PROJECT_DIR"
-        
-        cd "$PROJECT_DIR"
-        
-        # إنشاء الـ Wrapper وبناء الـ APK داخل المجلد الصحيح
+
+        # التأكد من وجود build.gradle للجذر
+        if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
+          echo "Creating root build.gradle..."
+          cat << 'EOF' > build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath "com.android.tools.build:gradle:7.4.2"
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+        fi
+
+        # إنشاء الـ Wrapper وبناء الـ APK
         gradle wrapper --gradle-version 8.0
         chmod +x gradlew
         ./gradlew assembleDebug

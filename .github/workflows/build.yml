@@ -26,9 +26,8 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Ensure Project Structure and Build
+    - name: Ensure Project Structure and Build with Gradle 7.5
       run: |
-        # التأكد من وجود مجلد app، وإنشائه إذا لم يكن موجوداً
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
           if [ ! -z "$SUB_DIR" ]; then
@@ -38,20 +37,17 @@ jobs:
           fi
         fi
 
-        # التأكد من وجود ملف build.gradle داخل مجلد app لكي يتعرف عليه أندرويد
         if [ ! -f "app/build.gradle" ] && [ ! -f "app/build.gradle.kts" ]; then
-          echo "Creating missing app/build.gradle..."
           mkdir -p app
           printf "plugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    compileSdk 33\n    defaultConfig {\n        applicationId \"com.whatsapp.auth\"\n        minSdk 21\n        targetSdk 33\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.9.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.8.0'\n}\n" > app/build.gradle
         fi
 
-        # إعدادات الجذر الرئيسية
         echo "include ':app'" > settings.gradle
 
         printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
-        # توليد الـ Wrapper وبناء الـ APK
-        gradle wrapper --gradle-version 8.0
+        # فرض استخدام إصدار Gradle 7.5 حصرياً وتوليد الـ Wrapper به
+        gradle wrapper --gradle-version 7.5
         chmod +x gradlew
         ./gradlew :app:assembleDebug
 

@@ -28,44 +28,23 @@ jobs:
 
     - name: Generate Gradle Structure and Build
       run: |
-        # البحث عن مجلد app أو إنشاؤه إن لم يكن موجوداً
         if [ ! -d "app" ]; then
-          # إذا كانت الملفات مفكوكة داخل مجلد فرعي، ننتقل إليه
           SUB_DIR=$(find . -maxdepth 2 -type d -name "app" | head -n 1)
           if [ ! -z "$SUB_DIR" ]; then
             cd "$(dirname "$SUB_DIR")"
           fi
         fi
 
-        # التأكد من وجود settings.gradle، وإذا لم يكن موجوداً نقوم بإنشائه تلقائياً
         if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
           echo "Creating missing settings.gradle..."
           echo "include ':app'" > settings.gradle
         fi
 
-        # التأكد من وجود build.gradle للجذر
         if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
           echo "Creating root build.gradle..."
-          cat << 'EOF' > build.gradle
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath "com.android.tools.build:gradle:7.4.2"
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          EOF
+          printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
         fi
 
-        # إنشاء الـ Wrapper وبناء الـ APK
         gradle wrapper --gradle-version 8.0
         chmod +x gradlew
         ./gradlew assembleDebug

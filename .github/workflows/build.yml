@@ -13,10 +13,17 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Unzip & Gradle
+    - name: Install Unzip & Latest Gradle
       run: |
         sudo apt-get update
-        sudo apt-get install -y unzip gradle
+        sudo apt-get install -y unzip wget
+        
+        # تحميل وتثبيت Gradle 7.5 مباشرة على السيرفر لتجنب أي إصدار قديم
+        wget https://services.gradle.org/distributions/gradle-7.5-bin.zip
+        sudo mkdir -p /opt/gradle
+        sudo unzip -d /opt/gradle gradle-7.5-bin.zip
+        echo "/opt/gradle/gradle-7.5/bin" >> $GITHUB_PATH
+
         unzip -o '*.zip'
         ls -la
 
@@ -26,7 +33,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Force Gradle 7.5 Wrapper and Build
+    - name: Build with System Gradle 7.5
       run: |
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
@@ -46,14 +53,8 @@ jobs:
 
         printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
-        # إنشاء مجلد wrapper وإجبار ملف الخصائص على استخدام رابط 7.5 المباشر
-        mkdir -p gradle/wrapper
-        printf "distributionBase=GRADLE_USER_HOME\ndistributionPath=wrapper/dists\ndistributionUrl=https\://services.gradle.org/distributions/gradle-7.5-bin.zip\nzipStoreBase=GRADLE_USER_HOME\nzipStorePath=wrapper/dists\n" > gradle/wrapper/gradle-wrapper.properties
-
-        # توليد الـ gradlew وبناء المشروع
-        gradle wrapper --gradle-version 7.5 --distribution-url=https://services.gradle.org/distributions/gradle-7.5-bin.zip
-        chmod +x gradlew
-        ./gradlew :app:assembleDebug
+        # استخدام أمر gradle العام للإصدار 7.5 مباشرة دون الحاجة لملفات الـ wrapper
+        gradle :app:assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

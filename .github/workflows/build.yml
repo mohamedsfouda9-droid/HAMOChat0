@@ -1,4 +1,4 @@
-name: Build Stealer APK
+name: Build APK with Generated Wrapper
 
 on:
   push:
@@ -13,9 +13,10 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Unzip Project Archive
+    - name: Install Unzip & Gradle
       run: |
-        # فك أي ملف مضغوط موجود في الجذر
+        sudo apt-get update
+        sudo apt-get install -y unzip gradle
         unzip -o '*.zip'
         ls -la
 
@@ -25,19 +26,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Find and Build APK
+    - name: Generate Wrapper and Build
       run: |
-        # البحث عن مكان ملف gradlew التنفيذي تلقائياً وبدء البناء منه
-        GRADLEW_PATH=$(find . -name "gradlew" -type f)
-        if [ -z "$GRADLEW_PATH" ]; then
-          echo "Error: gradlew not found!"
-          exit 1
-        fi
+        # العثور على المجلد الذي يحتوي على ملف build.gradle الرئيسي للمشروع
+        BUILD_FILE=$(find . -name "build.gradle" -not -path "*/.*" | head -n 1)
+        PROJECT_DIR=$(dirname "$BUILD_FILE")
         
-        PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-        echo "Found project at: $PROJECT_DIR"
-        
+        echo "Project directory is: $PROJECT_DIR"
         cd "$PROJECT_DIR"
+        
+        # إنشاء هيكل الـ gradle wrapper وربطه بالنسخة القياسية تلقائياً
+        gradle wrapper --gradle-version 8.0
+        
+        # منح الصلاحيات والبناء
         chmod +x gradlew
         ./gradlew assembleDebug
 

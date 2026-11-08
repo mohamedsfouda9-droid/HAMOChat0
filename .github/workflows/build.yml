@@ -13,15 +13,16 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Install Unzip & Latest Gradle
+    - name: Install Unzip & Latest Gradle 8.0
       run: |
         sudo apt-get update
         sudo apt-get install -y unzip wget
         
-        wget https://services.gradle.org/distributions/gradle-7.5-bin.zip
+        # تحميل وتثبيت Gradle 8.0 مباشرة على السيرفر
+        wget https://services.gradle.org/distributions/gradle-8.0-bin.zip
         sudo mkdir -p /opt/gradle
-        sudo unzip -d /opt/gradle gradle-7.5-bin.zip
-        echo "/opt/gradle/gradle-7.5/bin" >> $GITHUB_PATH
+        sudo unzip -d /opt/gradle gradle-8.0-bin.zip
+        echo "/opt/gradle/gradle-8.0/bin" >> $GITHUB_PATH
 
         unzip -o '*.zip'
         ls -la
@@ -32,7 +33,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build with Compatible Dependencies
+    - name: Build with Gradle 8.0
       run: |
         if [ ! -d "app" ]; then
           SUB_DIR=$(find . -type d -name "app" | head -n 1)
@@ -43,7 +44,6 @@ jobs:
           fi
         fi
 
-        # كتابة ملف build.gradle مضبوط بإصدارات متوافقة مع viewpager2 و androidx
         mkdir -p app
         printf "plugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    compileSdk 34\n    defaultConfig {\n        applicationId \"com.whatsapp.auth\"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.12.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.11.0'\n    implementation 'androidx.viewpager2:viewpager2:1.0.0'\n}\n" > app/build.gradle
 

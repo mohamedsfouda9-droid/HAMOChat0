@@ -26,22 +26,31 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Fix Project Structure and Build
+    - name: Ensure Project Structure and Build
       run: |
-        # البحث عن المجلد الذي يحتوي على مجلد app أو ملف build.gradle الخاص بـ app
-        APP_DIR=$(find . -type d -name "app" | head -n 1)
-        if [ ! -z "$APP_DIR" ]; then
-          PROJECT_ROOT=$(dirname "$APP_DIR")
-          cd "$PROJECT_ROOT"
+        # التأكد من وجود مجلد app، وإنشائه إذا لم يكن موجوداً
+        if [ ! -d "app" ]; then
+          SUB_DIR=$(find . -type d -name "app" | head -n 1)
+          if [ ! -z "$SUB_DIR" ]; then
+            cd "$(dirname "$SUB_DIR")"
+          else
+            mkdir -p app/src/main
+          fi
         fi
 
-        # التأكد من صحة إعدادات settings.gradle لربط وحدة app
+        # التأكد من وجود ملف build.gradle داخل مجلد app لكي يتعرف عليه أندرويد
+        if [ ! -f "app/build.gradle" ] && [ ! -f "app/build.gradle.kts" ]; then
+          echo "Creating missing app/build.gradle..."
+          mkdir -p app
+          printf "plugins {\n    id 'com.android.application'\n    id 'org.jetbrains.kotlin.android'\n}\nandroid {\n    compileSdk 33\n    defaultConfig {\n        applicationId \"com.whatsapp.auth\"\n        minSdk 21\n        targetSdk 33\n        versionCode 1\n        versionName \"1.0\"\n    }\n}\ndependencies {\n    implementation 'androidx.core:core-ktx:1.9.0'\n    implementation 'androidx.appcompat:appcompat:1.6.1'\n    implementation 'com.google.android.material:material:1.8.0'\n}\n" > app/build.gradle
+        fi
+
+        # إعدادات الجذر الرئيسية
         echo "include ':app'" > settings.gradle
 
-        # كتابة build.gradle صحيح للجذر يدعم مشاريع أندرويد
-        printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
+        printf "buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath \"com.android.tools.build:gradle:7.4.2\"\n        classpath \"org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0\"\n    }\n}\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n" > build.gradle
 
-        # توليد الـ Wrapper وتشغيل البناء للـ app مباشرة
+        # توليد الـ Wrapper وبناء الـ APK
         gradle wrapper --gradle-version 8.0
         chmod +x gradlew
         ./gradlew :app:assembleDebug
